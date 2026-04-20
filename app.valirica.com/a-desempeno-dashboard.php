@@ -17,6 +17,41 @@ if (!isset($_SESSION['user_id'])) {
 $user_id    = (int)$_SESSION['user_id'];
 $usuario_id = $user_id;
 
+// ── Auto-migración: geo-fichaje en turnos y tabla lugares_trabajo ─────────────
+try {
+(function() use ($conn) {
+    $cols_turnos = [
+        'modalidad'         => "ALTER TABLE turnos ADD COLUMN modalidad ENUM('presencial','remoto','hibrido') NOT NULL DEFAULT 'presencial'",
+        'requiere_geo'      => "ALTER TABLE turnos ADD COLUMN requiere_geo TINYINT(1) NOT NULL DEFAULT 0",
+        'geo_nombre_lugar'  => "ALTER TABLE turnos ADD COLUMN geo_nombre_lugar VARCHAR(100) DEFAULT NULL",
+        'geo_lat'           => "ALTER TABLE turnos ADD COLUMN geo_lat DECIMAL(10,7) DEFAULT NULL",
+        'geo_lng'           => "ALTER TABLE turnos ADD COLUMN geo_lng DECIMAL(10,7) DEFAULT NULL",
+        'geo_radio_metros'  => "ALTER TABLE turnos ADD COLUMN geo_radio_metros INT NOT NULL DEFAULT 100",
+        'geo_modo_estricto' => "ALTER TABLE turnos ADD COLUMN geo_modo_estricto TINYINT(1) NOT NULL DEFAULT 0",
+    ];
+    foreach ($cols_turnos as $col => $sql) {
+        $chk = $conn->query("SHOW COLUMNS FROM turnos LIKE '{$col}'");
+        if ($chk && $chk->num_rows === 0) { @$conn->query($sql); }
+    }
+    @$conn->query("
+        CREATE TABLE IF NOT EXISTS lugares_trabajo (
+            id           INT AUTO_INCREMENT PRIMARY KEY,
+            usuario_id   INT NOT NULL,
+            nombre       VARCHAR(100) NOT NULL,
+            lat          DECIMAL(10,7) NOT NULL,
+            lng          DECIMAL(10,7) NOT NULL,
+            radio_metros INT NOT NULL DEFAULT 100,
+            created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_lug_usuario (usuario_id),
+            CONSTRAINT fk_lug_usuario
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+})();
+} catch (\Throwable $e) {
+    error_log('Valirica geo auto-migration: ' . $e->getMessage());
+}
+
 /* ============ DESCARGAR HISTÓRICO DE ASISTENCIAS (Normativa Española) ============ */
 
 if (isset($_GET['action']) && $_GET['action'] === 'descargar_historico_asistencias') {

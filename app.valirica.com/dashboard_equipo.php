@@ -743,6 +743,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_asistencia']))
             'validacion_comentario'    => "ALTER TABLE asistencias ADD COLUMN validacion_comentario TEXT NULL",
             'validado_por'             => "ALTER TABLE asistencias ADD COLUMN validado_por INT NULL",
             'validado_at'              => "ALTER TABLE asistencias ADD COLUMN validado_at TIMESTAMP NULL",
+            // Geo-fichaje: solo resultado de verificación, nunca coordenadas GPS del empleado
+            'geo_verificado_entrada'   => "ALTER TABLE asistencias ADD COLUMN geo_verificado_entrada TINYINT(1) DEFAULT NULL",
+            'geo_distancia_entrada_m'  => "ALTER TABLE asistencias ADD COLUMN geo_distancia_entrada_m INT DEFAULT NULL",
+            'geo_verificado_salida'    => "ALTER TABLE asistencias ADD COLUMN geo_verificado_salida TINYINT(1) DEFAULT NULL",
+            'geo_distancia_salida_m'   => "ALTER TABLE asistencias ADD COLUMN geo_distancia_salida_m INT DEFAULT NULL",
         ];
         foreach ($cols as $col => $sql) {
             $chk = $conn->query("SHOW COLUMNS FROM asistencias LIKE '{$col}'");
