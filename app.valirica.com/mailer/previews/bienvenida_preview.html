@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preview — bienvenida.php · Valírica</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    body { margin: 0 !important; padding: 0 !important; background-color: #f0eeeb; }
+    @media only screen and (max-width: 600px) {
+      .wrapper { width: 100% !important; }
+      .inner   { padding: 36px 28px 32px !important; }
+      .foot    { padding: 24px 28px 32px !important; }
+    }
+    /* ── Preview toolbar ── */
+    #pbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: #0f0f0f; color: #888;
+      font-family: 'SF Mono','Fira Code',monospace;
+      font-size: 11.5px; padding: 0 20px; height: 36px;
+      display: flex; align-items: center; gap: 14px;
+      border-bottom: 1px solid #222;
+    }
+    #pbar .file  { color: #e2e2e2; font-weight: 600; }
+    #pbar .badge { background: #EF7F1B; color: #fff; padding: 2px 10px; border-radius: 20px; font-size: 10px; }
+    #pbar .sep   { color: #333; }
+    #pbar .note  { color: #555; font-size: 10.5px; margin-left: auto; }
+    #variant-btns { display: flex; gap: 8px; margin-left: 12px; }
+    #variant-btns button {
+      background: #1e1e1e; border: 1px solid #333; color: #999;
+      padding: 2px 10px; border-radius: 4px; font-size: 10px; cursor: pointer;
+      font-family: inherit; transition: all .15s;
+    }
+    #variant-btns button.active { background: #2a2a2a; border-color: #EF7F1B; color: #EF7F1B; }
+    body { padding-top: 36px; }
+  </style>
+</head>
+<body style="margin:0;padding-top:36px;background-color:#f0eeeb;
+             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;">
+
+  <div id="pbar">
+    <span class="file">mailer/templates/bienvenida.php</span>
+    <span class="sep">·</span>
+    <span class="badge">bienvenida</span>
+    <div id="variant-btns">
+      <button class="active" onclick="showVariant('full')">Logo + propósito</button>
+      <button onclick="showVariant('noprop')">Logo, sin propósito</button>
+      <button onclick="showVariant('nologo')">Sin logo, con propósito</button>
+    </div>
+    <span class="note">No aparece en el email real</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       BLOQUE REUTILIZABLE — misma estructura para las 3 variantes
+       Solo cambia: logo visible/oculto · propósito sí/no
+  ════════════════════════════════════════════════════════════════════ -->
+
+  <!-- ── VARIANTE A: Logo + propósito ── -->
+  <div id="v-full">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0eeeb;">
+    <tr><td align="center" style="padding:44px 16px 52px;">
+      <table role="presentation" class="wrapper" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;
+                    border:1px solid #e4e2df;box-shadow:0 2px 16px rgba(1,33,51,.06);">
+        <!-- Accent bar -->
+        <tr><td style="background-color:#EF7F1B;height:3px;font-size:0;line-height:0;border-radius:16px 16px 0 0;">&nbsp;</td></tr>
+        <!-- Contenido -->
+        <tr><td class="inner" style="padding:48px 52px 40px;">
+
+          <!-- Logo empresa -->
+          <div style="margin:0 0 32px;">
+            <img src="https://via.placeholder.com/160x44/012133/ffffff?text=NombreMarca"
+                 alt="NombreMarca" height="44"
+                 style="display:block;max-height:44px;width:auto;max-width:180px;" />
+          </div>
+
+          <p style="margin:0 0 20px;font-size:22px;font-weight:700;color:#0d0d0d;line-height:1.3;letter-spacing:-.2px;">
+            ¡Hola, Carlos!
+          </p>
+
+          <p style="margin:0 0 18px;font-size:15px;color:#3d3c3b;line-height:1.7;">
+            Te damos la bienvenida a Valírica — un espacio para gestionar de manera estratégica
+            el talento de <strong>NombreMarca</strong> y ayudarte a acercarte
+            cada vez más a ese gran propósito:
+            <em style="color:#555;">"Transformar la forma en que las empresas conectan con su talento, poniendo a las personas en el centro de cada decisión."</em>
+          </p>
+
+          <p style="margin:0 0 32px;font-size:15px;color:#3d3c3b;line-height:1.7;">
+            Desde este momento puedes acceder a tu dashboard para invitar y analizar
+            a tu equipo, y usar todos los recursos que tenemos para ti.
+          </p>
+
+          <!-- CTA -->
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 40px;">
+            <tr>
+              <td style="border-radius:10px;background-color:#EF7F1B;">
+                <a href="#" style="display:inline-block;padding:13px 28px;font-size:15px;
+                                   font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:.1px;">
+                  Ir a mi dashboard →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <hr style="border:none;border-top:1px solid #eeecea;margin:0 0 28px;" />
+
+          <!-- Vale -->
+          <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.7;">
+            Mi nombre es <strong style="color:#0d0d0d;">Vale</strong>, soy la
+            <strong style="color:#0d0d0d;">CIA</strong>
+            <span style="color:#888;font-style:italic;">(Cultural Intelligence Agent)</span>
+            de Valírica, y estaré encantada de acompañarte y contestar todas tus dudas
+            e inquietudes — o simplemente escucharte cada vez que quieras contarnos algo
+            o enviarnos un saludo.
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.7;">
+            Escríbeme cuando quieras a
+            <a href="mailto:vale@valirica.com" style="color:#EF7F1B;text-decoration:none;font-weight:500;">
+              vale@valirica.com</a> — estoy aquí. 🧡
+          </p>
+
+          <!-- Firma -->
+          <p style="margin:0;font-size:13px;color:#888;line-height:1.5;">
+            <strong style="color:#3d3c3b;">Vale</strong><br />
+            <span style="color:#a09e9c;">Cultural Intelligence Agent · Valírica</span>
+          </p>
+
+        </td></tr>
+        <!-- Footer base -->
+        <tr><td class="foot" style="padding:24px 52px 36px;border-top:1px solid #f0eeeb;">
+          <img src="https://valirica.com/uploads/logo-valirica.png" alt="Valírica" width="110"
+               style="display:block;max-width:110px;margin:0 0 14px;"
+               onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<p style=\'margin:0 0 14px;font-size:15px;font-weight:700;color:#ccc;\'>Valírica</p>')" />
+          <p style="margin:0;font-size:13px;color:#a09e9c;line-height:1.7;">
+            Puedes responder este correo en cualquier momento — o escribirnos directamente a
+            <a href="mailto:vale@valirica.com" style="color:#EF7F1B;text-decoration:none;">vale@valirica.com</a>.
+            Estamos aquí para lo que necesites, o simplemente para saludar.
+          </p>
+          <p style="margin:12px 0 0;font-size:11px;color:#c4c2bf;line-height:1.5;">
+            © 2026 Valírica · Este mensaje fue generado automáticamente.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+  </div>
+
+  <!-- ── VARIANTE B: Logo, sin propósito ── -->
+  <div id="v-noprop" style="display:none;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0eeeb;">
+    <tr><td align="center" style="padding:44px 16px 52px;">
+      <table role="presentation" class="wrapper" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;
+                    border:1px solid #e4e2df;box-shadow:0 2px 16px rgba(1,33,51,.06);">
+        <tr><td style="background-color:#EF7F1B;height:3px;font-size:0;line-height:0;border-radius:16px 16px 0 0;">&nbsp;</td></tr>
+        <tr><td class="inner" style="padding:48px 52px 40px;">
+
+          <div style="margin:0 0 32px;">
+            <img src="https://via.placeholder.com/160x44/012133/ffffff?text=NombreMarca"
+                 alt="NombreMarca" height="44"
+                 style="display:block;max-height:44px;width:auto;max-width:180px;" />
+          </div>
+
+          <p style="margin:0 0 20px;font-size:22px;font-weight:700;color:#0d0d0d;line-height:1.3;letter-spacing:-.2px;">
+            ¡Hola, Carlos!
+          </p>
+
+          <p style="margin:0 0 18px;font-size:15px;color:#3d3c3b;line-height:1.7;">
+            Te damos la bienvenida a Valírica — un espacio para gestionar de manera estratégica
+            el talento de <strong>NombreMarca</strong> y ayudarte a acercarte
+            cada vez más a tus metas como organización.
+          </p>
+
+          <p style="margin:0 0 32px;font-size:15px;color:#3d3c3b;line-height:1.7;">
+            Desde este momento puedes acceder a tu dashboard para invitar y analizar
+            a tu equipo, y usar todos los recursos que tenemos para ti.
+          </p>
+
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 40px;">
+            <tr>
+              <td style="border-radius:10px;background-color:#EF7F1B;">
+                <a href="#" style="display:inline-block;padding:13px 28px;font-size:15px;
+                                   font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:.1px;">
+                  Ir a mi dashboard →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <hr style="border:none;border-top:1px solid #eeecea;margin:0 0 28px;" />
+
+          <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.7;">
+            Mi nombre es <strong style="color:#0d0d0d;">Vale</strong>, soy la
+            <strong style="color:#0d0d0d;">CIA</strong>
+            <span style="color:#888;font-style:italic;">(Cultural Intelligence Agent)</span>
+            de Valírica, y estaré encantada de acompañarte y contestar todas tus dudas
+            e inquietudes — o simplemente escucharte cada vez que quieras contarnos algo
+            o enviarnos un saludo.
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.7;">
+            Escríbeme cuando quieras a
+            <a href="mailto:vale@valirica.com" style="color:#EF7F1B;text-decoration:none;font-weight:500;">
+              vale@valirica.com</a> — estoy aquí. 🧡
+          </p>
+          <p style="margin:0;font-size:13px;color:#888;line-height:1.5;">
+            <strong style="color:#3d3c3b;">Vale</strong><br />
+            <span style="color:#a09e9c;">Cultural Intelligence Agent · Valírica</span>
+          </p>
+
+        </td></tr>
+        <tr><td class="foot" style="padding:24px 52px 36px;border-top:1px solid #f0eeeb;">
+          <img src="https://valirica.com/uploads/logo-valirica.png" alt="Valírica" width="110"
+               style="display:block;max-width:110px;margin:0 0 14px;"
+               onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<p style=\'margin:0 0 14px;font-size:15px;font-weight:700;color:#ccc;\'>Valírica</p>')" />
+          <p style="margin:0;font-size:13px;color:#a09e9c;line-height:1.7;">
+            Puedes responder este correo en cualquier momento — o escribirnos directamente a
+            <a href="mailto:vale@valirica.com" style="color:#EF7F1B;text-decoration:none;">vale@valirica.com</a>.
+            Estamos aquí para lo que necesites, o simplemente para saludar.
+          </p>
+          <p style="margin:12px 0 0;font-size:11px;color:#c4c2bf;line-height:1.5;">
+            © 2026 Valírica · Este mensaje fue generado automáticamente.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+  </div>
+
+  <!-- ── VARIANTE C: Sin logo, con propósito ── -->
+  <div id="v-nologo" style="display:none;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0eeeb;">
+    <tr><td align="center" style="padding:44px 16px 52px;">
+      <table role="presentation" class="wrapper" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;
+                    border:1px solid #e4e2df;box-shadow:0 2px 16px rgba(1,33,51,.06);">
+        <tr><td style="background-color:#EF7F1B;height:3px;font-size:0;line-height:0;border-radius:16px 16px 0 0;">&nbsp;</td></tr>
+        <tr><td class="inner" style="padding:48px 52px 40px;">
+
+          <p style="margin:0 0 20px;font-size:22px;font-weight:700;color:#0d0d0d;line-height:1.3;letter-spacing:-.2px;">
+            ¡Hola, Carlos!
+          </p>
+
+          <p style="margin:0 0 18px;font-size:15px;color:#3d3c3b;line-height:1.7;">
+            Te damos la bienvenida a Valírica — un espacio para gestionar de manera estratégica
+            el talento de <strong>NombreMarca</strong> y ayudarte a acercarte
+            cada vez más a ese gran propósito:
+            <em style="color:#555;">"Transformar la forma en que las empresas conectan con su talento, poniendo a las personas en el centro de cada decisión."</em>
+          </p>
+
+          <p style="margin:0 0 32px;font-size:15px;color:#3d3c3b;line-height:1.7;">
+            Desde este momento puedes acceder a tu dashboard para invitar y analizar
+            a tu equipo, y usar todos los recursos que tenemos para ti.
+          </p>
+
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 40px;">
+            <tr>
+              <td style="border-radius:10px;background-color:#EF7F1B;">
+                <a href="#" style="display:inline-block;padding:13px 28px;font-size:15px;
+                                   font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:.1px;">
+                  Ir a mi dashboard →
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <hr style="border:none;border-top:1px solid #eeecea;margin:0 0 28px;" />
+
+          <p style="margin:0 0 16px;font-size:14px;color:#555;line-height:1.7;">
+            Mi nombre es <strong style="color:#0d0d0d;">Vale</strong>, soy la
+            <strong style="color:#0d0d0d;">CIA</strong>
+            <span style="color:#888;font-style:italic;">(Cultural Intelligence Agent)</span>
+            de Valírica, y estaré encantada de acompañarte y contestar todas tus dudas
+            e inquietudes — o simplemente escucharte cada vez que quieras contarnos algo
+            o enviarnos un saludo.
+          </p>
+          <p style="margin:0 0 24px;font-size:14px;color:#555;line-height:1.7;">
+            Escríbeme cuando quieras a
+            <a href="mailto:vale@valirica.com" style="color:#EF7F1B;text-decoration:none;font-weight:500;">
+              vale@valirica.com</a> — estoy aquí. 🧡
+          </p>
+          <p style="margin:0;font-size:13px;color:#888;line-height:1.5;">
+            <strong style="color:#3d3c3b;">Vale</strong><br />
+            <span style="color:#a09e9c;">Cultural Intelligence Agent · Valírica</span>
+          </p>
+
+        </td></tr>
+        <tr><td class="foot" style="padding:24px 52px 36px;border-top:1px solid #f0eeeb;">
+          <img src="https://valirica.com/uploads/logo-valirica.png" alt="Valírica" width="110"
+               style="display:block;max-width:110px;margin:0 0 14px;"
+               onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<p style=\'margin:0 0 14px;font-size:15px;font-weight:700;color:#ccc;\'>Valírica</p>')" />
+          <p style="margin:0;font-size:13px;color:#a09e9c;line-height:1.7;">
+            Puedes responder este correo en cualquier momento — o escribirnos directamente a
+            <a href="mailto:vale@valirica.com" style="color:#EF7F1B;text-decoration:none;">vale@valirica.com</a>.
+            Estamos aquí para lo que necesites, o simplemente para saludar.
+          </p>
+          <p style="margin:12px 0 0;font-size:11px;color:#c4c2bf;line-height:1.5;">
+            © 2026 Valírica · Este mensaje fue generado automáticamente.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+  </div>
+
+  <script>
+    function showVariant(v) {
+      ['full','noprop','nologo'].forEach(function(id) {
+        document.getElementById('v-' + id).style.display = id === v ? 'block' : 'none';
+      });
+      document.querySelectorAll('#variant-btns button').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes("'" + v + "'"));
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+[17-Mar-2026 16:46:27 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:53
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(53): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 53
+[17-Mar-2026 17:29:51 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'canal_slug' in 'where clause' in /home/mevytjyn/public_html/app.valirica.com/complaints/find.php:29
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/find.php(29): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/find.php on line 29
+[18-Mar-2026 10:42:04 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:67
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(67): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 67
+[18-Mar-2026 10:46:27 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:93
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(93): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 93
+[18-Mar-2026 10:46:37 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:93
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(93): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 93
+[18-Mar-2026 10:51:24 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:93
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(93): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 93
+[18-Mar-2026 10:51:40 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:93
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(93): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 93
+[18-Mar-2026 09:55:45 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 10:55:45 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 'correo' in 'field list' in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php:95
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php(95): mysqli->prepare()
+#1 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/admin-config.php on line 95
+[18-Mar-2026 10:03:18 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 10:10:33 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 10:13:16 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 10:13:32 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 10:13:46 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 11:16:56 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'tipo_destino' at row 1 in /home/mevytjyn/public_html/app.valirica.com/complaints/helper.php:212
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/helper.php(212): mysqli_stmt->execute()
+#1 /home/mevytjyn/public_html/app.valirica.com/complaints/submit.php(230): send_internal_notification()
+#2 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/helper.php on line 212
+[18-Mar-2026 10:18:16 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
+[18-Mar-2026 11:21:32 Europe/Madrid] PHP Fatal error:  Uncaught mysqli_sql_exception: Data truncated for column 'tipo_destino' at row 1 in /home/mevytjyn/public_html/app.valirica.com/complaints/helper.php:212
+Stack trace:
+#0 /home/mevytjyn/public_html/app.valirica.com/complaints/helper.php(212): mysqli_stmt->execute()
+#1 /home/mevytjyn/public_html/app.valirica.com/complaints/submit.php(230): send_internal_notification()
+#2 {main}
+  thrown in /home/mevytjyn/public_html/app.valirica.com/complaints/helper.php on line 212
+[18-Mar-2026 10:32:23 UTC] CANAL-DEBUG admin-config.php cargado | session_id=9jtd0866pk42l059rs2oj25mli | user_id=11 | __DIR__=/home/mevytjyn/public_html/app.valirica.com/complaints
