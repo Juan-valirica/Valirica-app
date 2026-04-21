@@ -8889,7 +8889,14 @@ function renderPaso2() {
       dias: [1, 2, 3, 4, 5],
       hora_inicio: '09:00',
       hora_fin: '18:00',
-      cruza_medianoche: 0
+      cruza_medianoche: 0,
+      modalidad: 'presencial',
+      requiere_geo: 0,
+      geo_nombre_lugar: '',
+      geo_lat: '',
+      geo_lng: '',
+      geo_radio_metros: 100,
+      geo_modo_estricto: 0
     });
   }
 
@@ -8925,114 +8932,126 @@ function renderPaso2() {
 
 function renderTurnoCard(turno, index) {
   const diasSemana = [
-    { num: 1, label: 'Lun' },
-    { num: 2, label: 'Mar' },
-    { num: 3, label: 'Mié' },
-    { num: 4, label: 'Jue' },
-    { num: 5, label: 'Vie' },
-    { num: 6, label: 'Sáb' },
-    { num: 7, label: 'Dom' }
+    { num: 1, label: 'Lun' }, { num: 2, label: 'Mar' }, { num: 3, label: 'Mié' },
+    { num: 4, label: 'Jue' }, { num: 5, label: 'Vie' }, { num: 6, label: 'Sáb' }, { num: 7, label: 'Dom' }
   ];
 
   let diasHTML = '';
   diasSemana.forEach(dia => {
     const checked = turno.dias.includes(dia.num);
-    diasHTML += `
-      <label class="dia-checkbox" style="flex: 1; min-width: 50px; padding: 10px 8px; border: 2px solid ${checked ? 'var(--c-accent)' : 'var(--perf-border)'}; border-radius: 8px; text-align: center; cursor: pointer; font-size: 12px; font-weight: 600; background: ${checked ? 'var(--c-accent)10' : 'white'}; transition: all 0.2s ease; user-select: none;">
-        <input
-          type="checkbox"
-          value="${dia.num}"
-          ${checked ? 'checked' : ''}
-          onchange="toggleDiaTurno(${index}, ${dia.num})"
-          style="display: none;"
-        >
-        ${dia.label}
-      </label>
-    `;
+    diasHTML += `<label class="dia-checkbox" style="flex:1; min-width:50px; padding:10px 8px; border:2px solid ${checked ? 'var(--c-accent)' : 'var(--perf-border)'}; border-radius:8px; text-align:center; cursor:pointer; font-size:12px; font-weight:600; background:${checked ? 'rgba(239,127,27,0.08)' : 'white'}; transition:all 0.2s ease; user-select:none;">
+      <input type="checkbox" value="${dia.num}" ${checked ? 'checked' : ''} onchange="toggleDiaTurno(${index}, ${dia.num})" style="display:none;">
+      ${dia.label}</label>`;
   });
 
+  const modalidadActual = turno.modalidad || 'presencial';
+  const mLabels = { presencial: '🏢 Presencial', remoto: '🏠 Teletrabajo', hibrido: '🔄 Híbrido' };
+  let modalidadBtns = '';
+  ['presencial', 'remoto', 'hibrido'].forEach(m => {
+    const active = modalidadActual === m;
+    modalidadBtns += `<button type="button" onclick="actualizarModalidadTurno(${index}, '${m}')" style="flex:1; padding:8px 4px; border:2px solid ${active ? 'var(--c-accent)' : 'var(--perf-border)'}; border-radius:8px; background:${active ? 'rgba(239,127,27,0.08)' : 'white'}; font-size:12px; font-weight:600; cursor:pointer; color:${active ? 'var(--c-accent)' : 'var(--c-body)'}; transition:all 0.2s ease;">${mLabels[m]}</button>`;
+  });
+
+  const radioActual = turno.geo_radio_metros || 100;
+  let radioBtns = '';
+  [50, 100, 200, 500].forEach(r => {
+    const active = radioActual === r;
+    radioBtns += `<button type="button" onclick="actualizarTurno(${index}, 'geo_radio_metros', ${r}); renderWizardStep();" style="padding:6px 14px; border:2px solid ${active ? 'var(--c-accent)' : 'var(--perf-border)'}; border-radius:6px; background:${active ? 'rgba(239,127,27,0.08)' : 'white'}; font-size:12px; font-weight:600; cursor:pointer; color:${active ? 'var(--c-accent)' : 'var(--c-body)'};">${r}m</button>`;
+  });
+
+  const geoSecVisible = modalidadActual !== 'remoto';
+  const geoFldVisible = !!turno.requiere_geo;
+  const modoEstrictoTxt = turno.geo_modo_estricto
+    ? 'El empleado <strong>no puede fichar</strong> fuera del perímetro.'
+    : 'El empleado puede fichar fuera del perímetro, pero quedará marcado para revisión.';
+  const geoNombreVal = (turno.geo_nombre_lugar || '').replace(/"/g, '&quot;');
+
   return `
-    <div class="turno-card" style="background: var(--perf-bg); border: 1px solid var(--perf-border); border-radius: 12px; padding: var(--space-4); margin-bottom: var(--space-4);">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
-        <h4 style="font-size: 15px; font-weight: 700; margin: 0;">
-          Turno ${index + 1}
-        </h4>
-        ${wizardData.turnos.length > 1 ? `
-          <button
-            type="button"
-            onclick="eliminarTurno(${index})"
-            style="background: none; border: none; color: #FF3B6D; cursor: pointer; font-size: 18px; padding: 4px 8px;"
-            title="Eliminar turno"
-          >
-            🗑️
-          </button>
-        ` : ''}
+    <div class="turno-card" style="background:var(--perf-bg); border:1px solid var(--perf-border); border-radius:12px; padding:var(--space-4); margin-bottom:var(--space-4);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-3);">
+        <h4 style="font-size:15px; font-weight:700; margin:0;">Turno ${index + 1}</h4>
+        ${wizardData.turnos.length > 1 ? `<button type="button" onclick="eliminarTurno(${index})" style="background:none; border:none; color:#FF3B6D; cursor:pointer; font-size:18px; padding:4px 8px;" title="Eliminar turno">🗑️</button>` : ''}
       </div>
 
-      <div style="margin-bottom: var(--space-3);">
-        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: var(--space-2);">
-          Nombre del turno:
-        </label>
-        <input
-          type="text"
-          value="${turno.nombre_turno}"
-          onchange="actualizarTurno(${index}, 'nombre_turno', this.value)"
-          placeholder="Ej: Lunes a Viernes"
-          style="width: 100%; padding: 10px 14px; border: 1px solid var(--perf-border); border-radius: 6px; font-size: 14px;"
-        >
+      <div style="margin-bottom:var(--space-3);">
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:var(--space-2);">Nombre del turno:</label>
+        <input type="text" value="${turno.nombre_turno}" onchange="actualizarTurno(${index}, 'nombre_turno', this.value)" placeholder="Ej: Lunes a Viernes" style="width:100%; padding:10px 14px; border:1px solid var(--perf-border); border-radius:6px; font-size:14px;">
       </div>
 
-      <div style="margin-bottom: var(--space-3);">
-        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: var(--space-2);">
-          Días de la semana:
-        </label>
-        <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
-          ${diasHTML}
-        </div>
+      <div style="margin-bottom:var(--space-3);">
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:var(--space-2);">Días de la semana:</label>
+        <div style="display:flex; gap:var(--space-2); flex-wrap:wrap;">${diasHTML}</div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-3);">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-3); margin-bottom:var(--space-3);">
         <div>
-          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: var(--space-2);">
-            Hora inicio:
-          </label>
-          <input
-            type="time"
-            value="${turno.hora_inicio}"
-            onchange="actualizarTurno(${index}, 'hora_inicio', this.value); calcularHoras(${index})"
-            style="width: 100%; padding: 10px 14px; border: 1px solid var(--perf-border); border-radius: 6px; font-size: 14px;"
-          >
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:var(--space-2);">Hora inicio:</label>
+          <input type="time" value="${turno.hora_inicio}" onchange="actualizarTurno(${index}, 'hora_inicio', this.value); calcularHoras(${index})" style="width:100%; padding:10px 14px; border:1px solid var(--perf-border); border-radius:6px; font-size:14px;">
         </div>
         <div>
-          <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: var(--space-2);">
-            Hora fin:
-          </label>
-          <input
-            type="time"
-            value="${turno.hora_fin}"
-            onchange="actualizarTurno(${index}, 'hora_fin', this.value); calcularHoras(${index})"
-            style="width: 100%; padding: 10px 14px; border: 1px solid var(--perf-border); border-radius: 6px; font-size: 14px;"
-          >
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:var(--space-2);">Hora fin:</label>
+          <input type="time" value="${turno.hora_fin}" onchange="actualizarTurno(${index}, 'hora_fin', this.value); calcularHoras(${index})" style="width:100%; padding:10px 14px; border:1px solid var(--perf-border); border-radius:6px; font-size:14px;">
         </div>
       </div>
 
-      <div style="margin-bottom: var(--space-2);">
-        <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
-          <input
-            type="checkbox"
-            ${turno.cruza_medianoche ? 'checked' : ''}
-            onchange="actualizarTurno(${index}, 'cruza_medianoche', this.checked ? 1 : 0); calcularHoras(${index})"
-            style="width: 18px; height: 18px; cursor: pointer;"
-          >
-          <span style="font-size: 13px;">
-            🌙 Este turno cruza medianoche (ej: 10 PM - 6 AM)
-          </span>
+      <div style="margin-bottom:var(--space-3);">
+        <label style="display:flex; align-items:center; gap:var(--space-2); cursor:pointer;">
+          <input type="checkbox" ${turno.cruza_medianoche ? 'checked' : ''} onchange="actualizarTurno(${index}, 'cruza_medianoche', this.checked ? 1 : 0); calcularHoras(${index})" style="width:18px; height:18px; cursor:pointer;">
+          <span style="font-size:13px;">🌙 Este turno cruza medianoche (ej: 10 PM – 6 AM)</span>
         </label>
       </div>
 
-      <div id="horas-dia-${index}" style="padding: var(--space-2); background: white; border-radius: 6px; font-size: 12px; opacity: 0.8;">
-        <!-- Se llenará con JS -->
+      <div style="height:1px; background:var(--perf-border); margin:var(--space-3) 0;"></div>
+
+      <div style="margin-bottom:var(--space-3);">
+        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:var(--space-2);">Modalidad:</label>
+        <div style="display:flex; gap:var(--space-2);">${modalidadBtns}</div>
       </div>
+
+      <div id="geo-section-${index}" style="display:${geoSecVisible ? 'block' : 'none'};">
+        <label style="display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3); border:1px solid ${geoFldVisible ? 'var(--c-accent)' : 'var(--perf-border)'}; background:${geoFldVisible ? 'rgba(239,127,27,0.04)' : 'white'}; border-radius:8px; cursor:pointer; margin-bottom:var(--space-2); transition:all 0.2s ease;">
+          <input type="checkbox" ${turno.requiere_geo ? 'checked' : ''} onchange="toggleGeoTurno(${index}, this.checked)" style="width:18px; height:18px; cursor:pointer; accent-color:var(--c-accent); flex-shrink:0;">
+          <div>
+            <div style="font-size:13px; font-weight:600;">📍 Verificar ubicación al fichar</div>
+            <div style="font-size:11px; opacity:0.6; margin-top:2px;">El empleado debe estar dentro del perímetro al registrar entrada o salida</div>
+          </div>
+        </label>
+
+        <div id="geo-fields-${index}" style="display:${geoFldVisible ? 'block' : 'none'}; padding:var(--space-4); background:#F8FAFC; border:1px solid var(--perf-border); border-radius:8px; margin-bottom:var(--space-2);">
+          <div style="margin-bottom:var(--space-3);">
+            <label style="display:block; font-size:12px; font-weight:600; margin-bottom:4px;">Nombre del lugar <span style="color:#FF3B6D;">*</span></label>
+            <input type="text" value="${geoNombreVal}" onchange="actualizarTurno(${index}, 'geo_nombre_lugar', this.value)" placeholder="Ej: Oficina Madrid — Gran Vía" style="width:100%; padding:8px 12px; border:1px solid var(--perf-border); border-radius:6px; font-size:13px;">
+          </div>
+
+          <div style="margin-bottom:var(--space-3);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+              <label style="font-size:12px; font-weight:600;">Coordenadas del centro de trabajo</label>
+              <button type="button" onclick="usarUbicacionActual(${index}, event)" style="padding:4px 12px; background:var(--c-secondary); border:none; border-radius:6px; color:white; font-size:11px; font-weight:600; cursor:pointer;">📍 Usar mi ubicación</button>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2);">
+              <input type="number" id="geo-lat-${index}" value="${turno.geo_lat || ''}" onchange="actualizarTurno(${index}, 'geo_lat', this.value ? parseFloat(this.value) : '')" placeholder="Latitud (ej: 40.4168)" step="any" style="padding:8px 12px; border:1px solid var(--perf-border); border-radius:6px; font-size:12px;">
+              <input type="number" id="geo-lng-${index}" value="${turno.geo_lng || ''}" onchange="actualizarTurno(${index}, 'geo_lng', this.value ? parseFloat(this.value) : '')" placeholder="Longitud (ej: -3.7038)" step="any" style="padding:8px 12px; border:1px solid var(--perf-border); border-radius:6px; font-size:12px;">
+            </div>
+            <p style="font-size:11px; opacity:0.5; margin:4px 0 0;">💡 Si estás en el lugar de trabajo, pulsa "Usar mi ubicación" para rellenar automáticamente.</p>
+          </div>
+
+          <div style="margin-bottom:var(--space-3);">
+            <label style="display:block; font-size:12px; font-weight:600; margin-bottom:var(--space-2);">Radio del perímetro aceptado</label>
+            <div style="display:flex; gap:var(--space-1); flex-wrap:wrap;">${radioBtns}</div>
+            <p style="font-size:11px; opacity:0.5; margin:var(--space-1) 0 0;">Se aceptará el fichaje si el empleado está a menos de <strong>${radioActual}m</strong> del centro definido.</p>
+          </div>
+
+          <label style="display:flex; align-items:flex-start; gap:var(--space-2); cursor:pointer; padding:var(--space-3); background:${turno.geo_modo_estricto ? '#FFF0F3' : 'white'}; border:1px solid ${turno.geo_modo_estricto ? 'rgba(255,59,109,0.3)' : 'var(--perf-border)'}; border-radius:6px; transition:all 0.2s ease;">
+            <input type="checkbox" ${turno.geo_modo_estricto ? 'checked' : ''} onchange="actualizarTurno(${index}, 'geo_modo_estricto', this.checked ? 1 : 0); renderWizardStep();" style="width:16px; height:16px; margin-top:2px; cursor:pointer; flex-shrink:0;">
+            <div>
+              <div style="font-size:12px; font-weight:600; color:${turno.geo_modo_estricto ? '#FF3B6D' : 'var(--c-body)'};">🔒 Modo estricto</div>
+              <div style="font-size:11px; opacity:0.75; margin-top:2px; line-height:1.4;">${modoEstrictoTxt}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div id="horas-dia-${index}" style="padding:var(--space-2); background:white; border-radius:6px; font-size:12px; opacity:0.8; margin-top:var(--space-2);"><!-- Se llenará con JS --></div>
     </div>
   `;
 }
@@ -9067,9 +9086,63 @@ function agregarTurno() {
     dias: [],
     hora_inicio: '09:00',
     hora_fin: '18:00',
-    cruza_medianoche: 0
+    cruza_medianoche: 0,
+    modalidad: 'presencial',
+    requiere_geo: 0,
+    geo_nombre_lugar: '',
+    geo_lat: '',
+    geo_lng: '',
+    geo_radio_metros: 100,
+    geo_modo_estricto: 0
   });
   renderWizardStep();
+}
+
+function actualizarModalidadTurno(index, modalidad) {
+  actualizarTurno(index, 'modalidad', modalidad);
+  if (modalidad === 'remoto') actualizarTurno(index, 'requiere_geo', 0);
+  renderWizardStep();
+}
+
+function toggleGeoTurno(index, checked) {
+  actualizarTurno(index, 'requiere_geo', checked ? 1 : 0);
+  const fields = document.getElementById('geo-fields-' + index);
+  if (fields) fields.style.display = checked ? 'block' : 'none';
+  const label = fields ? fields.previousElementSibling : null;
+  if (label) {
+    label.style.borderColor = checked ? 'var(--c-accent)' : 'var(--perf-border)';
+    label.style.background  = checked ? 'rgba(239,127,27,0.04)' : 'white';
+  }
+}
+
+function usarUbicacionActual(index, ev) {
+  if (!navigator.geolocation) { alert('Tu navegador no soporta geolocalización.'); return; }
+  const btn = ev ? ev.currentTarget : null;
+  const originalText = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ Obteniendo...'; btn.disabled = true; }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      const lat = pos.coords.latitude.toFixed(7);
+      const lng = pos.coords.longitude.toFixed(7);
+      actualizarTurno(index, 'geo_lat', parseFloat(lat));
+      actualizarTurno(index, 'geo_lng', parseFloat(lng));
+      const latInput = document.getElementById('geo-lat-' + index);
+      const lngInput = document.getElementById('geo-lng-' + index);
+      if (latInput) latInput.value = lat;
+      if (lngInput) lngInput.value = lng;
+      if (btn) {
+        btn.textContent = '✅ Capturada';
+        btn.style.background = '#00D98F';
+        setTimeout(function() { btn.textContent = originalText; btn.style.background = ''; btn.disabled = false; }, 2500);
+      }
+    },
+    function(err) {
+      if (btn) { btn.textContent = originalText; btn.disabled = false; }
+      const msgs = { 1: 'Permiso denegado. Activa la ubicación en tu navegador.', 2: 'Ubicación no disponible.', 3: 'Tiempo de espera agotado.' };
+      alert('📍 ' + (msgs[err.code] || 'Error al obtener la ubicación.'));
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 }
 
 function eliminarTurno(index) {
@@ -9314,12 +9387,21 @@ function validarPasoActual() {
         alert('Debes configurar al menos un turno');
         return false;
       }
-
       for (let i = 0; i < wizardData.turnos.length; i++) {
         const turno = wizardData.turnos[i];
         if (turno.dias.length === 0) {
           alert(`Turno ${i + 1}: debes seleccionar al menos un día`);
           return false;
+        }
+        if (turno.requiere_geo && (turno.modalidad || 'presencial') !== 'remoto') {
+          if (!turno.geo_nombre_lugar || !turno.geo_nombre_lugar.trim()) {
+            alert(`Turno ${i + 1}: el nombre del lugar es obligatorio cuando la geolocalización está activa.`);
+            return false;
+          }
+          if (!turno.geo_lat || !turno.geo_lng) {
+            alert(`Turno ${i + 1}: debes definir las coordenadas del lugar de trabajo.\nUsa el botón "📍 Usar mi ubicación" si estás allí, o introdúcelas manualmente.`);
+            return false;
+          }
         }
       }
       return true;
@@ -9674,8 +9756,6 @@ function togglePersonaForm(metaAreaId){
 
 </script>
 
-<!-- Geo-fichaje: carga versión actualizada del wizard con modalidad + geo -->
-<script src="horarios_trabajo_javascript.js?v=2"></script>
 
 
 
