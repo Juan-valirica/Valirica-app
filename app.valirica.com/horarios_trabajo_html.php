@@ -237,6 +237,59 @@
             Tolerancia: <?= $jornada['tolerancia_entrada_min'] ?> min entrada / <?= $jornada['tolerancia_salida_min'] ?> min salida
           </span>
         </div>
+
+        <!-- Badges modalidad y geo -->
+        <?php
+        $turnos_arr = $jornada['turnos'] ?? [];
+        $modalidades_jornada = [];
+        $tiene_geo_jornada = false;
+        foreach ($turnos_arr as $t) {
+            $tmod = $t['modalidad'] ?? '';
+            if ($tmod && !in_array($tmod, $modalidades_jornada)) {
+                $modalidades_jornada[] = $tmod;
+            }
+            if (!empty($t['requiere_geo'])) {
+                $tiene_geo_jornada = true;
+            }
+        }
+        ?>
+        <?php if (!empty($modalidades_jornada) || $tiene_geo_jornada): ?>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: var(--space-2);">
+          <?php foreach ($modalidades_jornada as $mod): ?>
+            <?php
+            if ($mod === 'presencial') {
+                $micon = '🏢'; $mlabel = 'Presencial'; $mcolor = '#184656';
+            } elseif ($mod === 'remoto') {
+                $micon = '🏠'; $mlabel = 'Teletrabajo'; $mcolor = '#6366F1';
+            } elseif ($mod === 'hibrido') {
+                $micon = '🔄'; $mlabel = 'Híbrido'; $mcolor = '#F59E0B';
+            } else {
+                $micon = '🏢'; $mlabel = h($mod); $mcolor = '#184656';
+            }
+            ?>
+            <span style="
+              display: inline-flex; align-items: center; gap: 4px;
+              padding: 3px 8px;
+              background: <?= $mcolor ?>20;
+              color: <?= $mcolor ?>;
+              border-radius: 6px;
+              font-size: 11px;
+              font-weight: 600;
+            "><?= $micon ?> <?= $mlabel ?></span>
+          <?php endforeach; ?>
+          <?php if ($tiene_geo_jornada): ?>
+            <span style="
+              display: inline-flex; align-items: center; gap: 4px;
+              padding: 3px 8px;
+              background: #10B98120;
+              color: #10B981;
+              border-radius: 6px;
+              font-size: 11px;
+              font-weight: 600;
+            ">📍 Geo-fichaje</span>
+          <?php endif; ?>
+        </div>
+        <?php endif; ?>
       </div>
 
       <!-- Empleados asignados -->

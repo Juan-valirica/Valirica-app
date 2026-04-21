@@ -296,41 +296,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $jornada_id = $stmt->insert_id;
         $stmt->close();
 
+        // Validar campos geo antes de insertar
+        foreach ($turnos as $ti => $turno) {
+            $tmod = in_array($turno['modalidad'] ?? '', ['presencial','remoto','hibrido'])
+                    ? $turno['modalidad'] : 'presencial';
+            if (intval($turno['requiere_geo'] ?? 0) && $tmod !== 'remoto') {
+                if (empty(trim($turno['geo_nombre_lugar'] ?? ''))) {
+                    throw new Exception('Turno ' . ($ti+1) . ': el nombre del lugar es obligatorio cuando la geolocalización está activa.');
+                }
+                if (($turno['geo_lat'] ?? '') === '' || ($turno['geo_lng'] ?? '') === '') {
+                    throw new Exception('Turno ' . ($ti+1) . ': las coordenadas son obligatorias cuando la geolocalización está activa.');
+                }
+                $chkLat = floatval($turno['geo_lat']);
+                $chkLng = floatval($turno['geo_lng']);
+                if ($chkLat < -90 || $chkLat > 90 || $chkLng < -180 || $chkLng > 180) {
+                    throw new Exception('Turno ' . ($ti+1) . ': coordenadas fuera de rango válido.');
+                }
+            }
+        }
+
         // Insertar turnos
         $stmt_turno = $conn->prepare("
             INSERT INTO turnos (
                 jornada_id, nombre_turno, dia_semana,
-                hora_inicio, hora_fin, cruza_medianoche, orden
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                hora_inicio, hora_fin, cruza_medianoche, orden,
+                modalidad, requiere_geo, geo_nombre_lugar,
+                geo_lat, geo_lng, geo_radio_metros, geo_modo_estricto
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         foreach ($turnos as $index => $turno) {
             $nombre_turno = $turno['nombre_turno'] ?? '';
-            $dias = $turno['dias'] ?? []; // Array de días: [1,2,3,4,5]
+            $dias         = $turno['dias'] ?? [];
 
-            // Asegurar formato HH:mm:ss (agregar :00 si solo viene HH:mm)
             $hora_inicio = $turno['hora_inicio'] ?? '09:00:00';
-            if (strlen($hora_inicio) == 5) $hora_inicio .= ':00'; // 23:00 -> 23:00:00
+            if (strlen($hora_inicio) == 5) $hora_inicio .= ':00';
 
             $hora_fin = $turno['hora_fin'] ?? '18:00:00';
-            if (strlen($hora_fin) == 5) $hora_fin .= ':00'; // 23:00 -> 23:00:00
-
-            // DEBUG: Log para verificar valores
-            error_log("DEBUG TURNO - hora_inicio RAW: " . ($turno['hora_inicio'] ?? 'NULL') . " | PROCESADO: $hora_inicio");
-            error_log("DEBUG TURNO - hora_fin RAW: " . ($turno['hora_fin'] ?? 'NULL') . " | PROCESADO: $hora_fin");
+            if (strlen($hora_fin) == 5) $hora_fin .= ':00';
 
             $cruza_medianoche = intval($turno['cruza_medianoche'] ?? 0);
-            $orden = $index + 1;
+            $orden            = $index + 1;
 
-            // Insertar un registro por cada día seleccionado
+            // Campos geo
+            $modalidad         = in_array($turno['modalidad'] ?? '', ['presencial','remoto','hibrido'])
+                                  ? $turno['modalidad'] : 'presencial';
+            $requiere_geo      = intval($turno['requiere_geo'] ?? 0);
+            $geo_nombre_lugar  = trim($turno['geo_nombre_lugar'] ?? '');
+            $geo_lat           = ($requiere_geo && $modalidad !== 'remoto' && ($turno['geo_lat'] ?? '') !== '')
+                                  ? floatval($turno['geo_lat']) : null;
+            $geo_lng           = ($requiere_geo && $modalidad !== 'remoto' && ($turno['geo_lng'] ?? '') !== '')
+                                  ? floatval($turno['geo_lng']) : null;
+            $geo_radio_metros  = max(1, intval($turno['geo_radio_metros'] ?? 100));
+            $geo_modo_estricto = intval($turno['geo_modo_estricto'] ?? 0);
+
+            // Teletrabajo: forzar geo desactivado (doble seguridad server-side)
+            if ($modalidad === 'remoto') {
+                $requiere_geo = 0;
+                $geo_lat      = null;
+                $geo_lng      = null;
+            }
+
             foreach ($dias as $dia) {
                 $dia = intval($dia);
                 if ($dia < 1 || $dia > 7) continue;
 
+                // tipos: i s i s s i i  s i s d d i i  (14 parámetros)
                 $stmt_turno->bind_param(
-                    "isissii",
+                    "isissiisisddii",
                     $jornada_id, $nombre_turno, $dia,
-                    $hora_inicio, $hora_fin, $cruza_medianoche, $orden
+                    $hora_inicio, $hora_fin, $cruza_medianoche, $orden,
+                    $modalidad, $requiere_geo, $geo_nombre_lugar,
+                    $geo_lat, $geo_lng, $geo_radio_metros, $geo_modo_estricto
                 );
 
                 $stmt_turno->execute();
