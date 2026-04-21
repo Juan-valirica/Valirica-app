@@ -9674,11 +9674,14 @@ function togglePersonaForm(metaAreaId){
 
 </script>
 
+<!-- Geo-fichaje: carga versión actualizada del wizard con modalidad + geo -->
+<script src="horarios_trabajo_javascript.js?v=2"></script>
 
- 
-  
-  
-  
+
+
+
+
+
   <script>
 document.addEventListener('DOMContentLoaded', function () {
   const toggles = document.querySelectorAll('.person-tasks-toggle');
