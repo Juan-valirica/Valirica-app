@@ -987,7 +987,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_asistencia']))
                 $stmt_u->execute(); $stmt_u->close();
             } else {
                 $stmt_i = $conn->prepare("INSERT INTO asistencias (persona_id, jornada_id, fecha, hora_entrada, estado, minutos_tarde_entrada, ubicacion_tipo, ubicacion_detalle, tipo_registro, jornada_teorica_inicio, jornada_teorica_fin, desviacion_minutos, estado_validacion, geo_verificado_entrada, geo_distancia_entrada_m) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                $stmt_i->bind_param("iisssisssssiisi", $empleado_id, $jornada_id, $fecha_hoy, $hora_actual, $estado, $minutos_tarde, $ubicacion_tipo, $ubicacion_detalle, $tipo_registro, $jornada_teorica_inicio, $jornada_teorica_fin, $desviacion_minutos, $estado_validacion, $geo_verificado_entrada, $geo_distancia_entrada_m);
+                $stmt_i->bind_param("iisssisssssisii", $empleado_id, $jornada_id, $fecha_hoy, $hora_actual, $estado, $minutos_tarde, $ubicacion_tipo, $ubicacion_detalle, $tipo_registro, $jornada_teorica_inicio, $jornada_teorica_fin, $desviacion_minutos, $estado_validacion, $geo_verificado_entrada, $geo_distancia_entrada_m);
                 $stmt_i->execute(); $stmt_i->close();
             }
 
