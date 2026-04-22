@@ -7333,13 +7333,14 @@ document.addEventListener('keydown', function(e) {
               <?php
               // Geo-fichaje + Modalidad strip (Phase 3)
               $g_modalidad   = $persona['turno_modalidad'] ?? null;
+              $g_req_geo     = (int)($persona['turno_requiere_geo'] ?? 0);
               $gv_e          = array_key_exists('geo_verificado_entrada', $persona) && $persona['geo_verificado_entrada'] !== null
                                  ? (int)$persona['geo_verificado_entrada'] : null;
               $gd_e          = $persona['geo_distancia_entrada_m'] ?? null;
               $gv_s          = array_key_exists('geo_verificado_salida', $persona) && $persona['geo_verificado_salida'] !== null
                                  ? (int)$persona['geo_verificado_salida'] : null;
               $gd_s          = $persona['geo_distancia_salida_m'] ?? null;
-              $show_strip    = ($g_modalidad && $g_modalidad !== 'presencial') || $gv_e !== null;
+              $show_strip    = $g_modalidad !== null || $g_req_geo;
               if ($show_strip):
                 $m_icons  = ['presencial' => '🏢', 'remoto' => '🏠', 'hibrido' => '🔄'];
                 $m_labels = ['presencial' => 'Presencial', 'remoto' => 'Teletrabajo', 'hibrido' => 'Híbrido'];
@@ -7354,7 +7355,7 @@ document.addEventListener('keydown', function(e) {
                 flex-wrap: wrap;
                 gap: 5px;
               ">
-                <?php if ($g_modalidad && $g_modalidad !== 'presencial'): ?>
+                <?php if ($g_modalidad): ?>
                 <span style="
                   font-size: 9px;
                   font-weight: 700;
@@ -7384,6 +7385,17 @@ document.addEventListener('keydown', function(e) {
                   padding: 2px 7px;
                   white-space: nowrap;
                 "><?= $geo_e_la ?></span>
+                <?php elseif ($g_req_geo): ?>
+                <span style="
+                  font-size: 9px;
+                  font-weight: 700;
+                  color: #94A3B8;
+                  background: #F8FAFC;
+                  border: 1px solid #E2E8F0;
+                  border-radius: 5px;
+                  padding: 2px 7px;
+                  white-space: nowrap;
+                ">📍 Geo activo</span>
                 <?php endif; ?>
 
                 <?php if ($gv_s !== null): ?>
