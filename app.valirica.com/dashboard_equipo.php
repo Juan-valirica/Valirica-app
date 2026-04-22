@@ -879,6 +879,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_asistencia']))
         $ubicacion_tipo    = isset($_POST['ubicacion_tipo'])    ? trim($_POST['ubicacion_tipo'])    : null;
         $ubicacion_detalle = isset($_POST['ubicacion_detalle']) ? trim($_POST['ubicacion_detalle']) : null;
 
+        // ── Coordenadas del empleado (geo-fichaje Phase 4) ───────────────────
+        $emp_lat = isset($_POST['emp_lat']) && is_numeric($_POST['emp_lat']) ? (float)$_POST['emp_lat'] : null;
+        $emp_lng = isset($_POST['emp_lng']) && is_numeric($_POST['emp_lng']) ? (float)$_POST['emp_lng'] : null;
+
+        $calcGeoDistM = function(float $la1, float $lo1, float $la2, float $lo2): int {
+            $R = 6371000;
+            $a = sin(deg2rad($la2-$la1)/2)**2 + cos(deg2rad($la1))*cos(deg2rad($la2))*sin(deg2rad($lo2-$lo1)/2)**2;
+            return (int)round(2*$R*atan2(sqrt($a), sqrt(1-$a)));
+        };
+
         // ── Obtener jornada asignada del empleado ────────────────────────────
         $stmt_jornada = $conn->prepare("
             SELECT ej.jornada_id, j.tolerancia_entrada_min, j.tolerancia_salida_min
@@ -912,7 +922,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_asistencia']))
             $tolerancia_entrada = (int)$jornada_result['tolerancia_entrada_min'];
             $tolerancia_salida  = (int)$jornada_result['tolerancia_salida_min'];
             $dia_semana = (int)date('N');
-            $stmt_turno = $conn->prepare("SELECT hora_inicio, hora_fin, cruza_medianoche FROM turnos WHERE jornada_id = ? AND dia_semana = ? LIMIT 1");
+            $stmt_turno = $conn->prepare("SELECT hora_inicio, hora_fin, cruza_medianoche, modalidad, requiere_geo, geo_lat, geo_lng, geo_radio_metros, geo_modo_estricto FROM turnos WHERE jornada_id = ? AND dia_semana = ? LIMIT 1");
             $stmt_turno->bind_param("ii", $jornada_id, $dia_semana);
             $stmt_turno->execute();
             $turno = stmt_get_result($stmt_turno)->fetch_assoc();
@@ -954,13 +964,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_asistencia']))
 
             $estado_validacion = ($tipo_registro === 'normal') ? 'no_requiere' : 'pendiente';
 
+            // ── Verificación geo-fichaje (Phase 4) ───────────────────────────
+            $geo_verificado_entrada  = null;
+            $geo_distancia_entrada_m = null;
+            if ($turno && !empty($turno['requiere_geo']) && ($turno['modalidad'] ?? 'presencial') !== 'remoto') {
+                if ($emp_lat !== null && $emp_lng !== null && !empty($turno['geo_lat'])) {
+                    $dist = $calcGeoDistM($emp_lat, $emp_lng, (float)$turno['geo_lat'], (float)$turno['geo_lng']);
+                    $radio = max(1, (int)($turno['geo_radio_metros'] ?? 100));
+                    $geo_distancia_entrada_m = $dist;
+                    $geo_verificado_entrada  = ($dist <= $radio) ? 1 : 0;
+                    if (!$geo_verificado_entrada && !empty($turno['geo_modo_estricto'])) {
+                        throw new Exception('No estás en el área de trabajo permitida. Distancia: ' . $dist . 'm (máximo: ' . $radio . 'm).');
+                    }
+                } elseif (!empty($turno['geo_modo_estricto'])) {
+                    throw new Exception('Este turno requiere verificación de ubicación. Activa el GPS e intenta de nuevo.');
+                }
+            }
+
             if ($asistencia_existente) {
-                $stmt_u = $conn->prepare("UPDATE asistencias SET hora_entrada=?, estado=?, minutos_tarde_entrada=?, ubicacion_tipo=?, ubicacion_detalle=?, tipo_registro=?, jornada_teorica_inicio=?, jornada_teorica_fin=?, desviacion_minutos=?, estado_validacion=? WHERE id=?");
-                $stmt_u->bind_param("ssisssssisi", $hora_actual, $estado, $minutos_tarde, $ubicacion_tipo, $ubicacion_detalle, $tipo_registro, $jornada_teorica_inicio, $jornada_teorica_fin, $desviacion_minutos, $estado_validacion, $asistencia_existente['id']);
+                $stmt_u = $conn->prepare("UPDATE asistencias SET hora_entrada=?, estado=?, minutos_tarde_entrada=?, ubicacion_tipo=?, ubicacion_detalle=?, tipo_registro=?, jornada_teorica_inicio=?, jornada_teorica_fin=?, desviacion_minutos=?, estado_validacion=?, geo_verificado_entrada=?, geo_distancia_entrada_m=? WHERE id=?");
+                $stmt_u->bind_param("ssisssssisiii", $hora_actual, $estado, $minutos_tarde, $ubicacion_tipo, $ubicacion_detalle, $tipo_registro, $jornada_teorica_inicio, $jornada_teorica_fin, $desviacion_minutos, $estado_validacion, $geo_verificado_entrada, $geo_distancia_entrada_m, $asistencia_existente['id']);
                 $stmt_u->execute(); $stmt_u->close();
             } else {
-                $stmt_i = $conn->prepare("INSERT INTO asistencias (persona_id, jornada_id, fecha, hora_entrada, estado, minutos_tarde_entrada, ubicacion_tipo, ubicacion_detalle, tipo_registro, jornada_teorica_inicio, jornada_teorica_fin, desviacion_minutos, estado_validacion) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
-                $stmt_i->bind_param("iisssisssssis", $empleado_id, $jornada_id, $fecha_hoy, $hora_actual, $estado, $minutos_tarde, $ubicacion_tipo, $ubicacion_detalle, $tipo_registro, $jornada_teorica_inicio, $jornada_teorica_fin, $desviacion_minutos, $estado_validacion);
+                $stmt_i = $conn->prepare("INSERT INTO asistencias (persona_id, jornada_id, fecha, hora_entrada, estado, minutos_tarde_entrada, ubicacion_tipo, ubicacion_detalle, tipo_registro, jornada_teorica_inicio, jornada_teorica_fin, desviacion_minutos, estado_validacion, geo_verificado_entrada, geo_distancia_entrada_m) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                $stmt_i->bind_param("iisssisssssiisi", $empleado_id, $jornada_id, $fecha_hoy, $hora_actual, $estado, $minutos_tarde, $ubicacion_tipo, $ubicacion_detalle, $tipo_registro, $jornada_teorica_inicio, $jornada_teorica_fin, $desviacion_minutos, $estado_validacion, $geo_verificado_entrada, $geo_distancia_entrada_m);
                 $stmt_i->execute(); $stmt_i->close();
             }
 
@@ -1035,8 +1062,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_asistencia']))
                 $mensaje_horario = '';
             }
 
-            $stmt_u = $conn->prepare("UPDATE asistencias SET hora_salida=?, minutos_tarde_salida=? WHERE id=?");
-            $stmt_u->bind_param("sii", $hora_actual, $minutos_tarde_salida, $asistencia_existente['id']);
+            // ── Verificación geo-fichaje salida (Phase 4) ────────────────────
+            $geo_verificado_salida  = null;
+            $geo_distancia_salida_m = null;
+            if ($turno && !empty($turno['requiere_geo']) && ($turno['modalidad'] ?? 'presencial') !== 'remoto') {
+                if ($emp_lat !== null && $emp_lng !== null && !empty($turno['geo_lat'])) {
+                    $dist_s = $calcGeoDistM($emp_lat, $emp_lng, (float)$turno['geo_lat'], (float)$turno['geo_lng']);
+                    $radio  = max(1, (int)($turno['geo_radio_metros'] ?? 100));
+                    $geo_distancia_salida_m = $dist_s;
+                    $geo_verificado_salida  = ($dist_s <= $radio) ? 1 : 0;
+                }
+            }
+
+            $stmt_u = $conn->prepare("UPDATE asistencias SET hora_salida=?, minutos_tarde_salida=?, geo_verificado_salida=?, geo_distancia_salida_m=? WHERE id=?");
+            $stmt_u->bind_param("siiii", $hora_actual, $minutos_tarde_salida, $geo_verificado_salida, $geo_distancia_salida_m, $asistencia_existente['id']);
             $stmt_u->execute(); $stmt_u->close();
 
             $mensaje = '✅ Salida registrada a las ' . substr($hora_actual, 0, 5) . $mensaje_salida . $mensaje_horario;
@@ -1089,7 +1128,8 @@ try {
         // Obtener turno de hoy
         $jornada_id = (int)$jornada_asignada['jornada_id'];
         $stmt_turno = $conn->prepare("
-            SELECT nombre_turno, dia_semana, hora_inicio, hora_fin, cruza_medianoche
+            SELECT nombre_turno, dia_semana, hora_inicio, hora_fin, cruza_medianoche,
+                   modalidad, requiere_geo, geo_lat, geo_lng, geo_radio_metros, geo_modo_estricto
             FROM turnos
             WHERE jornada_id = ? AND dia_semana = ?
             LIMIT 1
@@ -3870,7 +3910,7 @@ try {
         <!-- SALIDA -->
         <?php if ($asistencia_hoy && $asistencia_hoy['hora_entrada'] && !$asistencia_hoy['hora_salida']): ?>
         <button class="asistencia-btn asistencia-btn--salida"
-                onclick="marcarAsistencia('salida')"
+                onclick="_pedirGeoYFichar('salida')"
                 id="btn-salida">
           <i class="ph-fill ph-sign-out"></i>
           <span class="asistencia-btn-text">
@@ -3935,7 +3975,7 @@ try {
         <?php endif; ?>
 
         <?php if ($asistencia_hoy && $asistencia_hoy['hora_entrada'] && !$asistencia_hoy['hora_salida']): ?>
-        <button class="asistencia-btn asistencia-btn--salida" onclick="marcarAsistencia('salida')" id="btn-salida">
+        <button class="asistencia-btn asistencia-btn--salida" onclick="_pedirGeoYFichar('salida')" id="btn-salida">
           <i class="ph-fill ph-sign-out"></i>
           <span class="asistencia-btn-text">
             <span class="asistencia-btn-title">Finalizar registro</span>
@@ -4019,7 +4059,7 @@ try {
         <?php endif; ?>
 
         <?php if ($asistencia_hoy && $asistencia_hoy['hora_entrada'] && !$asistencia_hoy['hora_salida']): ?>
-        <button class="asistencia-btn asistencia-btn--salida" onclick="marcarAsistencia('salida')" id="btn-salida">
+        <button class="asistencia-btn asistencia-btn--salida" onclick="_pedirGeoYFichar('salida')" id="btn-salida">
           <i class="ph-fill ph-sign-out"></i>
           <span class="asistencia-btn-text">
             <span class="asistencia-btn-title">Finalizar registro</span>
@@ -4199,6 +4239,42 @@ try {
   </div>
 
   <script>
+  // Geo-fichaje (Phase 4): flags del turno de hoy
+  const _turnoRequiereGeo = <?= json_encode((bool)($turno_hoy['requiere_geo'] ?? false)) ?>;
+  const _turnoGeoEstricto = <?= json_encode((bool)($turno_hoy['geo_modo_estricto'] ?? false)) ?>;
+  const _turnoModalidad   = <?= json_encode($turno_hoy['modalidad'] ?? 'presencial') ?>;
+
+  // Solicitar geo y luego fichar (entrada o salida)
+  function _pedirGeoYFichar(tipo, ubiTipo = '', ubiDetalle = '') {
+    const necesitaGeo = _turnoRequiereGeo && _turnoModalidad !== 'remoto';
+    if (!necesitaGeo || !navigator.geolocation) {
+      marcarAsistencia(tipo, ubiTipo, ubiDetalle);
+      return;
+    }
+    const btn = tipo === 'entrada'
+      ? document.getElementById('btn-entrada')
+      : document.getElementById('btn-salida');
+    const titleEl = btn ? btn.querySelector('.asistencia-btn-title') : null;
+    const subEl   = btn ? btn.querySelector('.asistencia-btn-sub')   : null;
+    if (titleEl) titleEl.textContent = 'Obteniendo ubicación...';
+    if (subEl)   subEl.textContent   = 'Activa el GPS si se solicita';
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        marcarAsistencia(tipo, ubiTipo, ubiDetalle, pos.coords.latitude, pos.coords.longitude);
+      },
+      function() {
+        if (titleEl) titleEl.textContent = tipo === 'entrada' ? 'Iniciar Jornada' : 'Finalizar Jornada';
+        if (subEl)   subEl.textContent   = tipo === 'entrada' ? 'Registrar hora de entrada' : 'Registrar hora de salida';
+        if (_turnoGeoEstricto) {
+          vToast('Debes activar la ubicación para fichar en este turno.', 'error');
+        } else {
+          marcarAsistencia(tipo, ubiTipo, ubiDetalle);
+        }
+      },
+      { timeout: 10000, maximumAge: 30000, enableHighAccuracy: true }
+    );
+  }
+
   // Modal de ubicación
   function abrirModalUbicacion() {
     const modal = document.getElementById('modal-ubicacion');
@@ -4218,7 +4294,7 @@ try {
 
   function seleccionarUbicacion(tipo) {
     cerrarModalUbicacion();
-    marcarAsistencia('entrada', tipo, '');
+    _pedirGeoYFichar('entrada', tipo, '');
   }
 
   function confirmarOtroLugar() {
@@ -4228,7 +4304,7 @@ try {
       return;
     }
     cerrarModalUbicacion();
-    marcarAsistencia('entrada', 'remoto', detalle);
+    _pedirGeoYFichar('entrada', 'remoto', detalle);
   }
 
   // Cerrar modal al hacer clic fuera
@@ -4254,7 +4330,7 @@ try {
     t._timer = setTimeout(() => t.classList.remove('show'), 4000);
   }
 
-  function marcarAsistencia(tipo, ubicacionTipo = '', ubicacionDetalle = '') {
+  function marcarAsistencia(tipo, ubicacionTipo = '', ubicacionDetalle = '', empLat = null, empLng = null) {
     const btn = tipo === 'entrada' ? document.getElementById('btn-entrada') : document.getElementById('btn-salida');
     if (!btn) return;
 
@@ -4273,6 +4349,10 @@ try {
     if (ubicacionTipo) {
       formData.append('ubicacion_tipo', ubicacionTipo);
       formData.append('ubicacion_detalle', ubicacionDetalle);
+    }
+    if (empLat !== null && empLng !== null) {
+      formData.append('emp_lat', empLat);
+      formData.append('emp_lng', empLng);
     }
 
     fetch(window.location.href, {
