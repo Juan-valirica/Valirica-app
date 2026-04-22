@@ -2037,6 +2037,12 @@ try {
             j.tolerancia_entrada_min,
             t.hora_inicio,
             t.hora_fin,
+            COALESCE(t.modalidad, 'presencial') as turno_modalidad,
+            COALESCE(t.requiere_geo, 0) as turno_requiere_geo,
+            a.geo_verificado_entrada,
+            a.geo_distancia_entrada_m,
+            a.geo_verificado_salida,
+            a.geo_distancia_salida_m,
             CASE
                 WHEN a.estado IS NULL THEN 'ausente'
                 WHEN a.estado = 'ausente' THEN 'ausente'
@@ -2108,6 +2114,12 @@ try {
             0 as tolerancia_entrada_min,
             NULL as hora_inicio,
             NULL as hora_fin,
+            NULL as turno_modalidad,
+            0 as turno_requiere_geo,
+            a.geo_verificado_entrada,
+            a.geo_distancia_entrada_m,
+            a.geo_verificado_salida,
+            a.geo_distancia_salida_m,
             'warning' as nivel_alerta,
             '⚠️ Fuera de jornada' as estado_visual
         FROM asistencias a
@@ -7317,6 +7329,83 @@ document.addEventListener('keydown', function(e) {
                   <?php endif; ?>
                 </div>
               </div>
+
+              <?php
+              // Geo-fichaje + Modalidad strip (Phase 3)
+              $g_modalidad   = $persona['turno_modalidad'] ?? null;
+              $gv_e          = array_key_exists('geo_verificado_entrada', $persona) && $persona['geo_verificado_entrada'] !== null
+                                 ? (int)$persona['geo_verificado_entrada'] : null;
+              $gd_e          = $persona['geo_distancia_entrada_m'] ?? null;
+              $gv_s          = array_key_exists('geo_verificado_salida', $persona) && $persona['geo_verificado_salida'] !== null
+                                 ? (int)$persona['geo_verificado_salida'] : null;
+              $gd_s          = $persona['geo_distancia_salida_m'] ?? null;
+              $show_strip    = ($g_modalidad && $g_modalidad !== 'presencial') || $gv_e !== null;
+              if ($show_strip):
+                $m_icons  = ['presencial' => '🏢', 'remoto' => '🏠', 'hibrido' => '🔄'];
+                $m_labels = ['presencial' => 'Presencial', 'remoto' => 'Teletrabajo', 'hibrido' => 'Híbrido'];
+                $m_icon   = $m_icons[$g_modalidad] ?? '🏢';
+                $m_label  = $m_labels[$g_modalidad] ?? ucfirst($g_modalidad ?? '');
+              ?>
+              <div style="
+                padding: 7px 14px;
+                border-top: 1px solid #F5F5F5;
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 5px;
+              ">
+                <?php if ($g_modalidad && $g_modalidad !== 'presencial'): ?>
+                <span style="
+                  font-size: 9px;
+                  font-weight: 700;
+                  color: #64748B;
+                  background: #F8FAFC;
+                  border: 1px solid #E2E8F0;
+                  border-radius: 5px;
+                  padding: 2px 7px;
+                  white-space: nowrap;
+                "><?= $m_icon ?> <?= $m_label ?></span>
+                <?php endif; ?>
+
+                <?php if ($gv_e !== null): ?>
+                <?php
+                  $geo_e_bg = $gv_e === 1 ? '#F0FDF4' : '#FFF7ED';
+                  $geo_e_cl = $gv_e === 1 ? '#16A34A' : '#EA580C';
+                  $geo_e_la = ($gv_e === 1 ? '📍 En zona' : '⚠️ Fuera');
+                  if ($gd_e !== null) $geo_e_la .= ' · ' . number_format((int)$gd_e) . 'm';
+                ?>
+                <span style="
+                  font-size: 9px;
+                  font-weight: 700;
+                  color: <?= $geo_e_cl ?>;
+                  background: <?= $geo_e_bg ?>;
+                  border: 1px solid <?= $geo_e_cl ?>33;
+                  border-radius: 5px;
+                  padding: 2px 7px;
+                  white-space: nowrap;
+                "><?= $geo_e_la ?></span>
+                <?php endif; ?>
+
+                <?php if ($gv_s !== null): ?>
+                <?php
+                  $geo_s_bg = $gv_s === 1 ? '#F0FDF4' : '#FFF7ED';
+                  $geo_s_cl = $gv_s === 1 ? '#16A34A' : '#EA580C';
+                  $geo_s_la = ($gv_s === 1 ? '📍 Salida OK' : '⚠️ Salida fuera');
+                  if ($gd_s !== null) $geo_s_la .= ' · ' . number_format((int)$gd_s) . 'm';
+                ?>
+                <span style="
+                  font-size: 9px;
+                  font-weight: 700;
+                  color: <?= $geo_s_cl ?>;
+                  background: <?= $geo_s_bg ?>;
+                  border: 1px solid <?= $geo_s_cl ?>33;
+                  border-radius: 5px;
+                  padding: 2px 7px;
+                  white-space: nowrap;
+                "><?= $geo_s_la ?></span>
+                <?php endif; ?>
+              </div>
+              <?php endif; ?>
 
             </div>
           <?php endforeach; ?>
