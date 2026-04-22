@@ -3073,6 +3073,10 @@ if (empty($cultura_tipo_final)) {
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
 
+  <!-- Leaflet — mapa interactivo para geo-fichaje (sin API key) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     /* === Desempeño Dashboard Page Specific Styles === */
 
@@ -9025,14 +9029,17 @@ function renderTurnoCard(turno, index) {
 
           <div style="margin-bottom:var(--space-3);">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-              <label style="font-size:12px; font-weight:600;">Coordenadas del centro de trabajo</label>
-              <button type="button" onclick="usarUbicacionActual(${index}, event)" style="padding:4px 12px; background:var(--c-secondary); border:none; border-radius:6px; color:white; font-size:11px; font-weight:600; cursor:pointer;">📍 Usar mi ubicación</button>
+              <label style="font-size:12px; font-weight:600;">Ubicación del centro de trabajo</label>
+              <button type="button" onclick="usarUbicacionActual(${index}, event)" style="padding:4px 10px; background:var(--c-secondary); border:none; border-radius:6px; color:white; font-size:11px; font-weight:600; cursor:pointer;">📍 Mi ubicación</button>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-2);">
-              <input type="number" id="geo-lat-${index}" value="${turno.geo_lat || ''}" onchange="actualizarTurno(${index}, 'geo_lat', this.value ? parseFloat(this.value) : '')" placeholder="Latitud (ej: 40.4168)" step="any" style="padding:8px 12px; border:1px solid var(--perf-border); border-radius:6px; font-size:12px;">
-              <input type="number" id="geo-lng-${index}" value="${turno.geo_lng || ''}" onchange="actualizarTurno(${index}, 'geo_lng', this.value ? parseFloat(this.value) : '')" placeholder="Longitud (ej: -3.7038)" step="any" style="padding:8px 12px; border:1px solid var(--perf-border); border-radius:6px; font-size:12px;">
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+              <input type="text" id="geo-search-${index}" placeholder="Buscar por dirección o ciudad..." onkeydown="if(event.key==='Enter'){event.preventDefault();buscarDireccionGeo(${index});}" style="flex:1; padding:7px 10px; border:1px solid var(--perf-border); border-radius:6px; font-size:12px;">
+              <button type="button" onclick="buscarDireccionGeo(${index})" style="padding:7px 14px; background:var(--c-accent); border:none; border-radius:6px; color:white; font-size:12px; font-weight:600; cursor:pointer;">🔍</button>
             </div>
-            <p style="font-size:11px; opacity:0.5; margin:4px 0 0;">💡 Si estás en el lugar de trabajo, pulsa "Usar mi ubicación" para rellenar automáticamente.</p>
+            <div id="geo-map-${index}" style="height:200px; border-radius:8px; border:1px solid var(--perf-border); overflow:hidden; margin-bottom:6px; background:#f0f0f0;"></div>
+            <div id="geo-coords-${index}" style="font-size:11px; color:var(--c-body); opacity:0.6; text-align:center; padding:2px 0;">
+              ${turno.geo_lat ? '📍 ' + parseFloat(turno.geo_lat).toFixed(5) + ', ' + parseFloat(turno.geo_lng).toFixed(5) : 'Haz clic en el mapa o busca una dirección para fijar el punto'}
+            </div>
           </div>
 
           <div style="margin-bottom:var(--space-3);">
@@ -9059,6 +9066,93 @@ function renderTurnoCard(turno, index) {
 function initPaso2Handlers() {
   wizardData.turnos.forEach((turno, index) => {
     calcularHoras(index);
+  });
+  setTimeout(initGeoMaps, 50);
+}
+
+// ── Geo map helpers ───────────────────────────────────────────────────────────
+const _geoMaps = {};
+
+function initGeoMaps() {
+  wizardData.turnos.forEach((turno, index) => {
+    if (turno.requiere_geo && (turno.modalidad || 'presencial') !== 'remoto') {
+      initMapForTurno(index);
+    }
+  });
+}
+
+function initMapForTurno(index) {
+  if (typeof L === 'undefined') return;
+  const mapDiv = document.getElementById('geo-map-' + index);
+  if (!mapDiv) return;
+
+  // destruir instancia anterior si existe
+  if (_geoMaps[index]) { try { _geoMaps[index].remove(); } catch(e){} delete _geoMaps[index]; }
+
+  const turno = wizardData.turnos[index];
+  const lat  = turno.geo_lat  ? parseFloat(turno.geo_lat)  : 40.4168;
+  const lng  = turno.geo_lng  ? parseFloat(turno.geo_lng)  : -3.7038;
+  const zoom = turno.geo_lat  ? 15 : 5;
+  const radio = turno.geo_radio_metros || 100;
+
+  const map = L.map('geo-map-' + index, { zoomControl: true }).setView([lat, lng], zoom);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+  const circle = L.circle([lat, lng], {
+    radius: radio, color: '#EF7F1B', fillColor: '#EF7F1B', fillOpacity: 0.1, weight: 2
+  }).addTo(map);
+
+  function _updateGeoCoords(latlng) {
+    const lt = parseFloat(latlng.lat.toFixed(7));
+    const lg = parseFloat(latlng.lng.toFixed(7));
+    actualizarTurno(index, 'geo_lat', lt);
+    actualizarTurno(index, 'geo_lng', lg);
+    circle.setLatLng(latlng);
+    const el = document.getElementById('geo-coords-' + index);
+    if (el) el.textContent = '📍 ' + latlng.lat.toFixed(5) + ', ' + latlng.lng.toFixed(5);
+  }
+
+  marker.on('dragend', function(e) { _updateGeoCoords(e.target.getLatLng()); });
+  map.on('click', function(e) { marker.setLatLng(e.latlng); _updateGeoCoords(e.latlng); });
+
+  _geoMaps[index] = map;
+  _geoMaps[index + '_m'] = marker;
+  _geoMaps[index + '_c'] = circle;
+}
+
+function buscarDireccionGeo(index) {
+  const input = document.getElementById('geo-search-' + index);
+  if (!input || !input.value.trim()) return;
+  const btn = input.nextElementSibling;
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+
+  fetch('https://nominatim.openstreetmap.org/search?q=' + encodeURIComponent(input.value) + '&format=json&limit=1', {
+    headers: { 'Accept-Language': 'es' }
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (btn) { btn.textContent = orig; btn.disabled = false; }
+    if (!data || !data.length) { alert('Dirección no encontrada. Prueba con más detalles.'); return; }
+    const lt = parseFloat(data[0].lat), lg = parseFloat(data[0].lon);
+    const map = _geoMaps[index], marker = _geoMaps[index + '_m'], circle = _geoMaps[index + '_c'];
+    if (map && marker) {
+      map.setView([lt, lg], 16);
+      marker.setLatLng([lt, lg]);
+      circle.setLatLng([lt, lg]);
+      actualizarTurno(index, 'geo_lat', parseFloat(lt.toFixed(7)));
+      actualizarTurno(index, 'geo_lng', parseFloat(lg.toFixed(7)));
+      const el = document.getElementById('geo-coords-' + index);
+      if (el) el.textContent = '📍 ' + lt.toFixed(5) + ', ' + lg.toFixed(5);
+    }
+  })
+  .catch(function() {
+    if (btn) { btn.textContent = orig; btn.disabled = false; }
+    alert('Error al buscar. Verifica tu conexión e inténtalo de nuevo.');
   });
 }
 
@@ -9113,6 +9207,7 @@ function toggleGeoTurno(index, checked) {
     label.style.borderColor = checked ? 'var(--c-accent)' : 'var(--perf-border)';
     label.style.background  = checked ? 'rgba(239,127,27,0.04)' : 'white';
   }
+  if (checked) { setTimeout(function(){ initMapForTurno(index); }, 120); }
 }
 
 function usarUbicacionActual(index, ev) {
@@ -9124,12 +9219,20 @@ function usarUbicacionActual(index, ev) {
     function(pos) {
       const lat = pos.coords.latitude.toFixed(7);
       const lng = pos.coords.longitude.toFixed(7);
-      actualizarTurno(index, 'geo_lat', parseFloat(lat));
-      actualizarTurno(index, 'geo_lng', parseFloat(lng));
-      const latInput = document.getElementById('geo-lat-' + index);
-      const lngInput = document.getElementById('geo-lng-' + index);
-      if (latInput) latInput.value = lat;
-      if (lngInput) lngInput.value = lng;
+      const lt = parseFloat(lat), lg = parseFloat(lng);
+      actualizarTurno(index, 'geo_lat', lt);
+      actualizarTurno(index, 'geo_lng', lg);
+      // actualizar mapa si existe
+      const map = _geoMaps[index], marker = _geoMaps[index + '_m'], circle = _geoMaps[index + '_c'];
+      if (map && marker) {
+        map.setView([lt, lg], 16);
+        marker.setLatLng([lt, lg]);
+        if (circle) circle.setLatLng([lt, lg]);
+        const el = document.getElementById('geo-coords-' + index);
+        if (el) el.textContent = '📍 ' + pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5);
+      } else {
+        setTimeout(function(){ initMapForTurno(index); }, 100);
+      }
       if (btn) {
         btn.textContent = '✅ Capturada';
         btn.style.background = '#00D98F';
@@ -9294,20 +9397,28 @@ function renderPaso4() {
     totalHoras += (minutos / 60) * turno.dias.length;
   });
 
+  const _p4mIcon  = { presencial:'🏢', remoto:'🏠', hibrido:'🔄' };
+  const _p4mLabel = { presencial:'Presencial', remoto:'Teletrabajo', hibrido:'Híbrido' };
+  const _p4mColor = { presencial:'#184656', remoto:'#6366F1', hibrido:'#F59E0B' };
+  const _p4dMap   = {1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb', 7:'Dom'};
+
   let turnosHTML = '';
   wizardData.turnos.forEach((turno, index) => {
-    const diasMap = {1:'Lun', 2:'Mar', 3:'Mié', 4:'Jue', 5:'Vie', 6:'Sáb', 7:'Dom'};
-    const diasLabels = turno.dias.map(d => diasMap[d]).join(', ');
-
+    const diasLabels = turno.dias.map(d => _p4dMap[d]).join(', ');
+    const mod = turno.modalidad || 'presencial';
+    const badgeColor = _p4mColor[mod] || '#184656';
+    let geoLine = '';
+    if (turno.requiere_geo && mod !== 'remoto') {
+      geoLine = `<div style="font-size:11px; color:#10B981; margin-top:3px;">📍 ${turno.geo_nombre_lugar || 'Geo-fichaje'} · ${turno.geo_radio_metros||100}m${turno.geo_modo_estricto ? ' · 🔒 Estricto' : ''}</div>`;
+    }
     turnosHTML += `
-      <div style="padding: var(--space-3); background: var(--perf-bg); border-radius: 8px; margin-bottom: var(--space-2);">
-        <div style="font-size: 13px; font-weight: 600; margin-bottom: var(--space-1);">
-          📅 ${turno.nombre_turno}
+      <div style="padding:var(--space-3); background:var(--perf-bg); border-radius:8px; margin-bottom:var(--space-2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-1);">
+          <div style="font-size:13px; font-weight:600;">📅 ${turno.nombre_turno}</div>
+          <span style="font-size:11px; padding:2px 8px; background:${badgeColor}18; color:${badgeColor}; border-radius:6px; font-weight:600;">${_p4mIcon[mod]||'🏢'} ${_p4mLabel[mod]||'Presencial'}</span>
         </div>
-        <div style="font-size: 12px; opacity: 0.8;">
-          ${diasLabels}: ${turno.hora_inicio} - ${turno.hora_fin}
-          ${turno.cruza_medianoche ? ' 🌙' : ''}
-        </div>
+        <div style="font-size:12px; opacity:0.8;">${diasLabels}: ${turno.hora_inicio} - ${turno.hora_fin}${turno.cruza_medianoche ? ' 🌙' : ''}</div>
+        ${geoLine}
       </div>
     `;
   });
@@ -9556,27 +9667,43 @@ function mostrarDetallesJornada(jornada, turnos, empleados) {
         dias: [],
         hora_inicio: turno.hora_inicio,
         hora_fin: turno.hora_fin,
-        cruza_medianoche: turno.cruza_medianoche
+        cruza_medianoche: turno.cruza_medianoche,
+        modalidad: turno.modalidad || 'presencial',
+        requiere_geo: turno.requiere_geo || 0,
+        geo_nombre_lugar: turno.geo_nombre_lugar || '',
+        geo_radio_metros: turno.geo_radio_metros || 100,
+        geo_modo_estricto: turno.geo_modo_estricto || 0
       };
     }
     turnosAgrupados[key].dias.push(turno.dia_semana);
   });
 
+  const _mIcon  = { presencial:'🏢', remoto:'🏠', hibrido:'🔄' };
+  const _mLabel = { presencial:'Presencial', remoto:'Teletrabajo', hibrido:'Híbrido' };
+  const _mColor = { presencial:'#184656', remoto:'#6366F1', hibrido:'#F59E0B' };
+
   let turnosHTML = '';
   Object.values(turnosAgrupados).forEach(turno => {
     const diasLabels = turno.dias.sort((a,b) => a-b).map(d => diasMap[d]).join(', ');
     const horaInicio = turno.hora_inicio.substring(0, 5);
-    const horaFin = turno.hora_fin.substring(0, 5);
-
+    const horaFin    = turno.hora_fin.substring(0, 5);
+    const mod = turno.modalidad || 'presencial';
+    const badgeColor = _mColor[mod] || '#184656';
+    let geoLine = '';
+    if (turno.requiere_geo && mod !== 'remoto') {
+      geoLine = `<div style="font-size:11px; color:#10B981; margin-top:4px; font-weight:500;">
+        📍 ${turno.geo_nombre_lugar || 'Geo-fichaje activo'} · ${turno.geo_radio_metros}m${turno.geo_modo_estricto ? ' · 🔒 Estricto' : ''}
+      </div>`;
+    }
     turnosHTML += `
-      <div style="padding: var(--space-3); background: var(--perf-bg); border-radius: 8px; margin-bottom: var(--space-2);">
-        <div style="font-weight: 600; margin-bottom: var(--space-1);">${turno.nombre}</div>
-        <div style="font-size: 13px; color: var(--c-body);">
-          📅 ${diasLabels}
+      <div style="padding:var(--space-3); background:var(--perf-bg); border-radius:8px; margin-bottom:var(--space-2);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-1);">
+          <div style="font-weight:600;">${turno.nombre}</div>
+          <span style="font-size:11px; padding:2px 8px; background:${badgeColor}18; color:${badgeColor}; border-radius:6px; font-weight:600; white-space:nowrap;">${_mIcon[mod]||'🏢'} ${_mLabel[mod]||'Presencial'}</span>
         </div>
-        <div style="font-size: 13px; color: var(--c-body);">
-          ⏰ ${horaInicio} - ${horaFin} ${turno.cruza_medianoche ? '🌙' : ''}
-        </div>
+        <div style="font-size:13px; color:var(--c-body);">📅 ${diasLabels}</div>
+        <div style="font-size:13px; color:var(--c-body);">⏰ ${horaInicio} - ${horaFin}${turno.cruza_medianoche ? ' 🌙' : ''}</div>
+        ${geoLine}
       </div>
     `;
   });
