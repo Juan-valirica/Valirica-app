@@ -188,10 +188,43 @@ if (isset($_GET['action']) && $_GET['action'] === 'descargar_historico_asistenci
                       AND p.estado = 'aprobado'
                     LIMIT 1
                 )
-            ) AS 'Observaciones'
+            ) AS 'Observaciones',
+            CASE
+                WHEN t.requiere_geo = 1 AND COALESCE(t.modalidad, 'presencial') != 'remoto' THEN 'Sí'
+                ELSE 'No'
+            END AS 'Verificación Geo',
+            CASE
+                WHEN t.requiere_geo = 1 AND COALESCE(t.modalidad, 'presencial') != 'remoto'
+                    THEN CASE
+                        WHEN a.geo_verificado_entrada = 1 THEN 'En zona'
+                        WHEN a.geo_verificado_entrada = 0 THEN 'Fuera de zona'
+                        ELSE 'Sin datos'
+                    END
+                ELSE '--'
+            END AS 'Geo Entrada',
+            CASE
+                WHEN t.requiere_geo = 1 AND COALESCE(t.modalidad, 'presencial') != 'remoto' AND a.geo_distancia_entrada_m IS NOT NULL
+                    THEN CONCAT(a.geo_distancia_entrada_m, ' m')
+                ELSE '--'
+            END AS 'Distancia Entrada',
+            CASE
+                WHEN t.requiere_geo = 1 AND COALESCE(t.modalidad, 'presencial') != 'remoto'
+                    THEN CASE
+                        WHEN a.geo_verificado_salida = 1 THEN 'En zona'
+                        WHEN a.geo_verificado_salida = 0 THEN 'Fuera de zona'
+                        ELSE 'Sin datos'
+                    END
+                ELSE '--'
+            END AS 'Geo Salida',
+            CASE
+                WHEN t.requiere_geo = 1 AND COALESCE(t.modalidad, 'presencial') != 'remoto' AND a.geo_distancia_salida_m IS NOT NULL
+                    THEN CONCAT(a.geo_distancia_salida_m, ' m')
+                ELSE '--'
+            END AS 'Distancia Salida'
         FROM asistencias a
         INNER JOIN equipo e ON a.persona_id = e.id
         LEFT JOIN jornadas_trabajo j ON a.jornada_id = j.id
+        LEFT JOIN turnos t ON t.jornada_id = a.jornada_id AND t.dia_semana = WEEKDAY(a.fecha) + 1
         WHERE e.usuario_id = ?
           AND a.fecha BETWEEN ? AND ?
         ORDER BY e.nombre_persona ASC, a.fecha DESC
